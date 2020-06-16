@@ -14,4 +14,4 @@ This repository contains PyTorch implementations of the Neural Process variants
 
 #### 1d function regression
 
-<img src="https://github.com/EmilienDupont/neural-processes/raw/master/imgs/np_1d.gif" width="400">
+<img src="https://https://github.com/VersElectronics/Neural-Processes/blob/master/misc/images/anp_-3_3.gif" width="400">
