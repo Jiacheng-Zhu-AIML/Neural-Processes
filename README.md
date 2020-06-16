@@ -13,5 +13,7 @@ This repository contains PyTorch implementations of the Neural Process variants
 ## Examples
 
 #### 1d function regression
+![10 context points](misc/images/anp_-3_3.gif?raw=true "Title")
 
-<img src="https://https://github.com/VersElectronics/Neural-Processes/blob/master/misc/images/anp_-3_3.gif" width="400">
+#### Image condition reconstruction
+![10 context points](misc/images/placeholder?raw=true "Title")
