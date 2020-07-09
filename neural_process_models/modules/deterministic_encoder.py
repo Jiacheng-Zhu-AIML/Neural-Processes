@@ -7,8 +7,8 @@ TODO: whether to put the cross-attention in this encoder?
 import torch
 from torch import nn
 
-from mlp import MLP
-from attention import Attention
+from .mlp import MLP
+from .attention import Attention
 
 
 class DeterministicEncoder(nn.Module):

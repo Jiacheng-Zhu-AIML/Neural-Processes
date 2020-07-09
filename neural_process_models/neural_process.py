@@ -1,6 +1,9 @@
-from .module import LatentEncoder, DeterministicEncoder, Decoder
 from torch import nn
 import torch
+
+from modules.latent_encoder import LatentEncoder
+from modules.deterministic_encoder import DeterministicEncoder
+from modules.decoder import Decoder 
 
 
 class NeuralProcessModel(nn.Module):

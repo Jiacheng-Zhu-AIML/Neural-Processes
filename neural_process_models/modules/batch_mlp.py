@@ -12,7 +12,7 @@ Args:
 
 from torch import nn
 
-from np_block_relu_2d import NPBlockRelu2d
+from .np_block_relu_2d import NPBlockRelu2d
 
 
 class BatchMLP(nn.Module):

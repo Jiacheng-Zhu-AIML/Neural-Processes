@@ -1,8 +1,8 @@
 import torch
 
-from latent_encoder import LatentEncoder
-# from deterministic_encoder import DeterministicEncoder
-# from decoder import Decoder
+from modules.latent_encoder import LatentEncoder
+# from modules.deterministic_encoder import DeterministicEncoder
+# from modules.decoder import Decoder
 
 
 torch.manual_seed(0)

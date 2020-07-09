@@ -20,8 +20,8 @@ context_x(batch, seq_len, input_d), context_y(batch, seq_len, output_d)
 import torch
 from torch import nn
 
-from mlp import MLP
-from attention import Attention
+from .mlp import MLP
+from .attention import Attention
 
 
 class LatentEncoder(nn.Module):

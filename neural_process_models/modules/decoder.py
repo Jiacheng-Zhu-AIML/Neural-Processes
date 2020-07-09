@@ -20,7 +20,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from mlp import MLP
+from .mlp import MLP
 
 
 class Decoder(nn.Module):

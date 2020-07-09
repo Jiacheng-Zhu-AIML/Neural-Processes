@@ -3,7 +3,7 @@
 import torch
 from torch import nn
 
-from batch_mlp import BatchMLP
+from .batch_mlp import BatchMLP
 
 
 class AttnLinear(nn.Module):
