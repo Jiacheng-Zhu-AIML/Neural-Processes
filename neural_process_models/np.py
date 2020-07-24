@@ -6,7 +6,7 @@ from modules.deterministic_encoder import DeterministicEncoder
 from modules.decoder import Decoder 
 
 
-class NeuralProcessModel(nn.Module):
+class NP_Model(nn.Module):
     """
     (Attentive) Neural Process model
     """
@@ -19,14 +19,14 @@ class NeuralProcessModel(nn.Module):
                  use_self_attention=True,
                  use_deter_path=True,
                  **kwargs):
-        super(NeuralProcessModel, self).__init__()
+        super(NP_Model, self).__init__()
         self.x_dim = x_dim
         self.y_dim = y_dim
         self.mlp_hidden_size_list = mlp_hidden_size_list
         self.latent_dim = latent_dim
         self.use_rnn = use_rnn
-        self.use_self_attention = use_self_attention,
-        self.use_deter_path = use_self_attention
+        self.use_self_attention = use_self_attention
+        self.use_deter_path = use_deter_path
 
         # NOTICE: Latent Encoder
         self._latent_encoder = LatentEncoder(input_x_dim=self.x_dim,

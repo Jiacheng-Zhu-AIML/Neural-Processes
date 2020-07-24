@@ -6,7 +6,7 @@ from modules.deterministic_encoder import DeterministicEncoder
 from modules.decoder import Decoder 
 
 
-class NeuralProcessModel(nn.Module):
+class ANP_RNN_Model(nn.Module):
     """
     (Attentive) Neural Process model
     """
@@ -15,24 +15,38 @@ class NeuralProcessModel(nn.Module):
                  y_dim,
                  mlp_hidden_size_list,
                  latent_dim,
-                 use_rnn=False,
+                 use_rnn=True,
                  use_self_attention=True,
+                 le_self_attention_type="dot",
+                 de_self_attention_type="dot",
+                 de_cross_attention_type="multihead",
                  use_deter_path=True,
                  **kwargs):
-        super(NeuralProcessModel, self).__init__()
+        super(ANP_RNN_Model, self).__init__()
         self.x_dim = x_dim
         self.y_dim = y_dim
         self.mlp_hidden_size_list = mlp_hidden_size_list
         self.latent_dim = latent_dim
         self.use_rnn = use_rnn
-        self.use_self_attention = use_self_attention,
-        self.use_deter_path = use_self_attention
+        self.use_deter_path = use_deter_path
+
+        if self.use_rnn:
+            self.x_dim = latent_dim
+            self.num_rnn_layers = 2
+            
+            self.rnn = nn.LSTM(x_dim, self.x_dim, self.num_rnn_layers)
+        else:
+            self.rnn_hidden_size = None
+            self.num_rnn_layers = None
+            self.rnn = None
 
         # NOTICE: Latent Encoder
         self._latent_encoder = LatentEncoder(input_x_dim=self.x_dim,
                                              input_y_dim=self.y_dim,
                                              hidden_dim_list=self.mlp_hidden_size_list,
-                                             latent_dim=self.latent_dim
+                                             latent_dim=self.latent_dim,
+                                             use_self_attn=use_self_attention,
+                                             self_attention_type=le_self_attention_type
                                              )
         # NOTICE : Decoder
         self._decoder = Decoder(x_dim=self.x_dim,
@@ -48,16 +62,29 @@ class NeuralProcessModel(nn.Module):
                                                     input_y_dim=self.y_dim,
                                                     hidden_dim_list=self.mlp_hidden_size_list,
                                                     latent_dim=self.latent_dim,  # the dim of last axis of r..
-                                                    self_attention_type="dot",
-                                                    use_self_attn=True,
+                                                    self_attention_type=de_self_attention_type,
+                                                    use_self_attn=use_self_attention,
                                                     attention_layers=2,
                                                     use_lstm=False,
-                                                    cross_attention_type="multihead",
+                                                    cross_attention_type=de_cross_attention_type,
                                                     attention_dropout=0)
 
 
     def forward(self, context_x, context_y, target_x, target_y=None):
         _, target_size, _ = target_x.size()
+
+        # Transform context_x, target_x to latent sequence using LSTM.
+        if self.use_rnn:
+            _, context_size, _ = context_x.size()
+
+            h0 = torch.randn(self.num_rnn_layers, context_size, self.x_dim)  # hidden states
+            c0 = torch.randn(self.num_rnn_layers, context_size, self.x_dim)  # cell states
+            context_x, _ = self.rnn(context_x, (h0, c0))
+        
+            h0 = torch.randn(self.num_rnn_layers, target_size, self.x_dim)  # hidden states
+            c0 = torch.randn(self.num_rnn_layers, target_size, self.x_dim)  # cell states
+            target_x, _ = self.rnn(target_x, (h0, c0))
+
 
         prior_dist, prior_mu, prior_sigma = self._latent_encoder(context_x, context_y)
 
