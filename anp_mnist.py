@@ -6,6 +6,7 @@ import torch
 from matplotlib import pyplot as plt
 import mnist
 import random
+import numpy as np
 
 # Provide access to modules in repo.
 sys.path.insert(0, os.path.abspath('neural_process_models'))
@@ -13,30 +14,21 @@ sys.path.insert(0, os.path.abspath('neural_process_models'))
 from neural_process_models.anp import ANP_Model
 
 
-# Retrieve 10000 test data points from MNIST, prepare data data for ANP.
+# Retrieve 10000 test data points from MNIST.
 
-print("Retrieving and preparing data...")
+test_images = mnist.test_images()  # (10000 x 28 x 28)
+test_images = (test_images / 255.0)  # normalize pixel values
 
-x_data = torch.Tensor([float(i) for i in range(784)])
-x_data = x_data.view(784, 1)
-
-test_images = torch.from_numpy(mnist.test_images()).float()  # (10000 x 28 x 28)
-test_images = test_images.view(10000, 784, 1)
-test_labels = mnist.test_labels()
-
-y_data = [torch.Tensor([]) for i in range(10)]	# separate data by digit
-
-for i in range(test_images.size()[0]):
-	y_data[test_labels[i]] = torch.cat((y_data[test_labels[i]],
-		torch.unsqueeze(test_images[i], 0)), 0)
+data_size = len(test_images)
+test_images = np.resize(test_images, (10000, 28, 28, 1))
 
 print("Retrieved and prepared data. Training...")
 
 
 # Initialize model, hyperparameters
 
-model = ANP_Model(x_dim=1,	# x_dim: pixel index (0-783)
-			      y_dim=1,	# y_dim: pixel value (0-255)
+model = ANP_Model(x_dim=2,	# x_dim: pixel index (0-783)
+			      y_dim=1,	# y_dim: normalized pixel value (0-1)
 			      mlp_hidden_size_list=[256, 256, 256, 256],
 			      latent_dim=256,
 			      use_rnn=False,
@@ -46,17 +38,10 @@ model = ANP_Model(x_dim=1,	# x_dim: pixel index (0-783)
 optim = torch.optim.Adam(model.parameters(), lr=1e-4)
 
 num_epochs = 1000
-batch_size = 100
-
+batch_size = 50
+num_context = 400
 
 # Train model; display results
-
-ctt_x = torch.Tensor([])
-tgt_x = torch.Tensor([])
-for i in range(batch_size):
-	ctt_x = torch.cat((ctt_x, torch.unsqueeze(x_data, 0)), 0)
-	tgt_x = torch.cat((tgt_x, torch.unsqueeze(x_data, 0)), 0)
-
 
 for epoch in range(1, num_epochs + 1):
     print("step = " + str(epoch))
@@ -66,21 +51,44 @@ for epoch in range(1, num_epochs + 1):
     plt.clf()
     optim.zero_grad()
 
-    ctt_y = torch.Tensor([])
-    tgt_y = torch.Tensor([])
-    for digit in range(10):
-    	num_to_sample = int(2 * batch_size / 10)
+    ctt_x, ctt_y, tgt_x, tgt_y = list(), list(), list(), list()
 
-    	sample_indices = random.sample(range(y_data[digit].size()[0]), num_to_sample)
+    sample_context_indices = random.sample(range(data_size), batch_size)
 
-    	for idx in sample_indices[:int(batch_size / 10)]:
-    		ctt_y = torch.cat((ctt_y, torch.unsqueeze(y_data[digit][idx], 0)), 0)
+    for context_idx in sample_context_indices:
+    	pixel_indices = random.sample(range(784), num_context)
 
-    	for idx in sample_indices[int(batch_size / 10):]:
-    		tgt_y = torch.cat((tgt_y, torch.unsqueeze(y_data[digit][idx], 0)), 0)
+    	c_x, c_y = list(), list()
+    	for pixel_idx in pixel_indices:
+    		pixel_x = pixel_idx // 28
+    		pixel_y = pixel_idx % 28
 
-    # ctt_x: (batch_size x 784 x 1), ctt_y: (batch_size x 784 x 1)
-    # tgt_x: (batch_size x 784 x 1), tgt_y: (batch_size x 784 x 1)
+    		c_x.append([pixel_x, pixel_y])
+    		c_y.append(test_images[context_idx][pixel_x][pixel_y])
+
+    	ctt_x.append(c_x)
+    	ctt_y.append(c_y)
+
+    sample_target_indices = random.sample(range(data_size), batch_size)
+
+    for target_idx in sample_target_indices:
+        t_x, t_y = list(), list()
+        for pixel_x in range(28):
+        	for pixel_y in range(28):
+	            t_x.append([pixel_x, pixel_y])
+	            t_y.append(test_images[target_idx][pixel_x][pixel_y])
+
+        tgt_x.append(t_x)
+        tgt_y.append(t_y)
+
+    ctt_x = torch.FloatTensor(ctt_x)
+    ctt_y = torch.FloatTensor(ctt_y)
+    tgt_x = torch.FloatTensor(tgt_x)
+    tgt_y = torch.FloatTensor(tgt_y)
+
+
+    # ctt_x: (batch_size x num_context x 2), ctt_y: (batch_size x 784 x 1)
+    # tgt_x: (batch_size x num_context x 2), tgt_y: (batch_size x 784 x 1)
     mu, sigma, log_p, kl, loss = model(ctt_x, ctt_y, tgt_x, tgt_y)
 
     # print('kl =', kl)
@@ -100,14 +108,17 @@ for epoch in range(1, num_epochs + 1):
     
     # Visualize first target image.
     pred_y = mu[0].view(28, 28).detach().numpy()
-    print(min(mu[0].view(784).detach().numpy()))
-    print(max(mu[0].view(784).detach().numpy()))
+    # print(min(mu[0].view(784).detach().numpy()))
+    # print(max(mu[0].view(784).detach().numpy()))
 
-    plt.imshow(pred_y, cmap="gray", vmin=0, vmax=255)
+    plt.axis('off')
+    #plt.imshow(torch.sigmoid(tgt_y).squeeze(0).view(-1, 28).detach().numpy())
+    plt.imshow(pred_y)
+    # plt.imshow(pred_y, cmap="gray", vmin=0, vmax=255)
 
     title_str = 'Training at epoch ' + str(epoch)
     plt.title(title_str)
-    # plt.savefig(title_str)
+	plt.savefig(title_str + ".png")
     plt.pause(0.1)
 
 plt.ioff()
