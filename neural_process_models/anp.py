@@ -94,34 +94,9 @@ class ANP_Model(nn.Module):
         # Obtain the prediction
         dist, mu, sigma = self._decoder(R, Z, target_x)
 
-        """
-        # From implementation of loss function from soobinseo repo
-
-        criterion = nn.BCELoss()
-        def kl_div(prior_mu, prior_var, posterior_mu, posterior_var):
-            kl_div = (torch.exp(posterior_var) + (posterior_mu-prior_mu) ** 2) / torch.exp(prior_var) - 1. + (prior_var - posterior_var)
-            kl_div = 0.5 * kl_div.sum()
-            return kl_div
-        """
-
         # If we want to calculate the log_prob for training we will make use of the
         # target_y. At test time the target_y is not available so we return None.
         if target_y is not None:
-            """
-            # From implementation of loss function from soobinseo repo
-
-            # get log probability
-            bce_loss = criterion(torch.sigmoid(mu), target_y)
-
-            # get KL divergence between prior and posterior
-            kl = kl_div(prior_mu, prior_sigma, post_mu, post_sigma)
-
-            log_p = None
-
-            # maximize prob and minimize KL divergence
-            loss = bce_loss + kl
-            """
-
             # get log probability
             # Get KL between prior and posterior
             kl = torch.distributions.kl_divergence(post_dist, prior_dist).mean(-1)

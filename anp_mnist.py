@@ -27,18 +27,18 @@ print("Retrieved and prepared data. Training...")
 
 # Initialize model, hyperparameters
 
-model = ANP_Model(x_dim=2,	# x_dim: pixel index (0-783)
+model = ANP_Model(x_dim=2,	# x_dim: normalized pixel index (0-1 x 0-1)
 			      y_dim=1,	# y_dim: normalized pixel value (0-1)
 			      mlp_hidden_size_list=[256, 256, 256, 256],
 			      latent_dim=256,
 			      use_rnn=False,
 			      use_self_attention=False,
-			      use_deter_path=True)
+			      use_deter_path=True)#.cuda()
 
 optim = torch.optim.Adam(model.parameters(), lr=1e-4)
 
-num_epochs = 1000
-batch_size = 50
+num_epochs = 10000
+batch_size = 16
 num_context = 400
 
 # Train model; display results
@@ -60,8 +60,8 @@ for epoch in range(1, num_epochs + 1):
 
     	c_x, c_y = list(), list()
     	for pixel_idx in pixel_indices:
-    		pixel_x = pixel_idx // 28
-    		pixel_y = pixel_idx % 28
+    		pixel_x = (pixel_idx // 28)
+    		pixel_y = (pixel_idx % 28)
 
     		c_x.append([pixel_x, pixel_y])
     		c_y.append(test_images[context_idx][pixel_x][pixel_y])
@@ -81,10 +81,10 @@ for epoch in range(1, num_epochs + 1):
         tgt_x.append(t_x)
         tgt_y.append(t_y)
 
-    ctt_x = torch.FloatTensor(ctt_x)
-    ctt_y = torch.FloatTensor(ctt_y)
-    tgt_x = torch.FloatTensor(tgt_x)
-    tgt_y = torch.FloatTensor(tgt_y)
+    ctt_x = torch.FloatTensor(ctt_x)#.cuda()
+    ctt_y = torch.FloatTensor(ctt_y)#.cuda()
+    tgt_x = torch.FloatTensor(tgt_x)#.cuda()
+    tgt_y = torch.FloatTensor(tgt_y)#.cuda()
 
 
     # ctt_x: (batch_size x num_context x 2), ctt_y: (batch_size x 784 x 1)
@@ -108,17 +108,14 @@ for epoch in range(1, num_epochs + 1):
     
     # Visualize first target image.
     pred_y = mu[0].view(28, 28).detach().numpy()
-    # print(min(mu[0].view(784).detach().numpy()))
-    # print(max(mu[0].view(784).detach().numpy()))
 
     plt.axis('off')
     #plt.imshow(torch.sigmoid(tgt_y).squeeze(0).view(-1, 28).detach().numpy())
     plt.imshow(pred_y)
-    # plt.imshow(pred_y, cmap="gray", vmin=0, vmax=255)
 
     title_str = 'Training at epoch ' + str(epoch)
     plt.title(title_str)
-	plt.savefig(title_str + ".png")
+    plt.savefig(title_str + ".png")
     plt.pause(0.1)
 
 plt.ioff()
