@@ -59,6 +59,7 @@ class DeterministicEncoder(nn.Module):
             cross_attention_type,
             x_dim=input_x_dim,
             attention_layers=attention_layers,
+            mlp_hidden_dim_list=self.hidden_dim_list
         )
 
 

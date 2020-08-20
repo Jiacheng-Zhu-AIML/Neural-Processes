@@ -3,7 +3,7 @@
 import torch
 from torch import nn
 
-from .batch_mlp import BatchMLP
+from .mlp import MLP
 
 
 class AttnLinear(nn.Module):
@@ -28,25 +28,14 @@ class Attention(nn.Module):
         rep="mlp",
         dropout=0,
         batchnorm=False,
+        mlp_hidden_dim_list=[],
     ):
         super().__init__()
         self._rep = rep
 
         if self._rep == "mlp":
-            self.batch_mlp_k = BatchMLP(
-                x_dim,
-                hidden_dim,
-                attention_layers,
-                dropout=dropout,
-                batchnorm=batchnorm,
-            )
-            self.batch_mlp_q = BatchMLP(
-                x_dim,
-                hidden_dim,
-                attention_layers,
-                dropout=dropout,
-                batchnorm=batchnorm,
-            )
+            self.mlp_k = MLP(x_dim, mlp_hidden_dim_list)
+            self.mlp_q = MLP(x_dim, mlp_hidden_dim_list)
 
         if attention_type == "uniform":
             self._attention_func = self._uniform_attention
@@ -77,8 +66,8 @@ class Attention(nn.Module):
 
     def forward(self, k, v, q):
         if self._rep == "mlp":
-            k = self.batch_mlp_k(k)
-            q = self.batch_mlp_q(q)
+            k = self.mlp_k(k)
+            q = self.mlp_q(q)
         rep = self._attention_func(k, v, q)
         return rep
 
@@ -89,11 +78,19 @@ class Attention(nn.Module):
         return rep
 
     def _laplace_attention(self, k, v, q, scale=0.5):
-        k_ = k.unsqueeze(1)
-        v_ = v.unsqueeze(2)
-        unnorm_weights = torch.abs((k_ - v_) * scale)
-        unnorm_weights = unnorm_weights.sum(dim=-1)
-        weights = torch.softmax(unnorm_weights, dim=-1)
+        # TODO: re-implement in the future as this runs too slowly.
+
+        b, n, _ = k.size()
+        b, m, _ = q.size()
+
+        weights = torch.empty(b, m, n)
+        for h in range(b):
+            print(h)
+            for i in range(m):
+                for j in range(n):
+                    weights[h][i][j] = -1.0 * torch.sum((q[h][i] - k[h][j]), dim=-1).item()
+                weights[h][i] = torch.softmax(weights[h][i], dim=-1)
+
         rep = torch.einsum("bik,bkj->bij", weights, v)
         return rep
 

@@ -8,7 +8,7 @@ from modules.decoder import Decoder
 
 class ANP_Model(nn.Module):
     """
-    (Attentive) Neural Process model
+    Attentive Neural Process model
     """
     def __init__(self,
                  x_dim,
@@ -18,6 +18,8 @@ class ANP_Model(nn.Module):
                  use_rnn=False,
                  use_self_attention=True,
                  use_deter_path=True,
+                 self_attention_type="dot",
+                 cross_attention_type="dot",
                  **kwargs):
         super(ANP_Model, self).__init__()
         self.x_dim = x_dim
@@ -27,33 +29,34 @@ class ANP_Model(nn.Module):
         self.use_rnn = use_rnn
         self.use_self_attention = use_self_attention
         self.use_deter_path = use_deter_path
+        self.self_attention_type = self_attention_type
+        self.cross_attention_type = cross_attention_type
 
         # NOTICE: Latent Encoder
         self._latent_encoder = LatentEncoder(input_x_dim=self.x_dim,
                                              input_y_dim=self.y_dim,
                                              hidden_dim_list=self.mlp_hidden_size_list,
-                                             latent_dim=self.latent_dim
-                                             )
+                                             latent_dim=self.latent_dim)
+
         # NOTICE : Decoder
         self._decoder = Decoder(x_dim=self.x_dim,
                                 y_dim=self.y_dim,
                                 mid_hidden_dim_list=self.mlp_hidden_size_list,
                                 latent_dim=self.latent_dim,  # the dim of last axis of sc and z..
-                                use_deterministic_path=True,  # whether use d_path or not will change the size of input
-                                use_lstm=False
-                                 )
+                                use_deterministic_path=self.use_deter_path,  # whether use d_path or not will change the size of input
+                                use_lstm=False)
 
         # NOTICE: Deterministic Encoder
-        self._deter_encoder = DeterministicEncoder( input_x_dim=self.x_dim,
-                                                    input_y_dim=self.y_dim,
-                                                    hidden_dim_list=self.mlp_hidden_size_list,
-                                                    latent_dim=self.latent_dim,  # the dim of last axis of r..
-                                                    self_attention_type="dot",
-                                                    use_self_attn=True,
-                                                    attention_layers=2,
-                                                    use_lstm=False,
-                                                    cross_attention_type="multihead",
-                                                    attention_dropout=0)
+        self._deter_encoder = DeterministicEncoder(input_x_dim=self.x_dim,
+                                                   input_y_dim=self.y_dim,
+                                                   hidden_dim_list=self.mlp_hidden_size_list,
+                                                   latent_dim=self.latent_dim,  # the dim of last axis of r..
+                                                   self_attention_type=self.self_attention_type,
+                                                   use_self_attn=self.use_self_attention,
+                                                   attention_layers=2,
+                                                   use_lstm=False,
+                                                   cross_attention_type=self.cross_attention_type,
+                                                   attention_dropout=0)
 
 
     def forward(self, context_x, context_y, target_x, target_y=None):

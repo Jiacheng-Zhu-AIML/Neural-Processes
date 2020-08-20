@@ -33,7 +33,9 @@ model = ANP_Model(x_dim=2,	# x_dim: normalized pixel index (0-1 x 0-1)
 			      latent_dim=256,
 			      use_rnn=False,
 			      use_self_attention=False,
-			      use_deter_path=True)#.cuda()
+			      use_deter_path=True,
+			      self_attention_type="dot",
+			      cross_attention_type="dot")#.cuda()
 
 optim = torch.optim.Adam(model.parameters(), lr=1e-4)
 
@@ -42,6 +44,8 @@ batch_size = 16
 num_context = 400
 
 # Train model; display results
+
+# avg_loss_list = []
 
 for epoch in range(1, num_epochs + 1):
     print("step = " + str(epoch))
@@ -99,6 +103,13 @@ for epoch in range(1, num_epochs + 1):
     # tgt_x_np = tgt_x[0, :, :].squeeze(-1).numpy()
     # print('tgt_x_np.shape =', tgt_x_np.shape)
 
+    """
+    if epoch == 1:
+        avg_loss_list.append(loss.item())
+    else:
+    	avg_loss_list.append(((epoch - 1) * avg_loss_list[-1] + loss.item()) / epoch)
+    """
+
     loss.backward()
     optim.step()
 
@@ -111,12 +122,33 @@ for epoch in range(1, num_epochs + 1):
 
     plt.axis('off')
     #plt.imshow(torch.sigmoid(tgt_y).squeeze(0).view(-1, 28).detach().numpy())
-    plt.imshow(pred_y)
+    #plt.imshow(pred_y)
 
-    title_str = 'Training at epoch ' + str(epoch)
-    plt.title(title_str)
-    plt.savefig(title_str + ".png")
+    """
+    if epoch % 1000 == 0:
+        target_indices = random.sample(range(mu.size()[0]), 20)
+        for idx in target_indices:
+            title_str = 'Training at epoch ' + str(epoch) + ', image ' + str(idx)
+            plt.title(title_str)
+            pred_y = mu[idx].view(28, 28).detach().cpu().numpy()
+            plt.imshow(pred_y)
+            plt.savefig("../results/" + str(epoch) + "/" + title_str + ".png")
+
+        torch.save({'model':model.state_dict(),
+                    'optimizer':optim.state_dict()},
+                    os.path.join('./checkpoints','checkpoint_%d.pth.tar' % epoch))
+	"""
+
     plt.pause(0.1)
 
 plt.ioff()
 plt.show()
+
+"""
+with open("../results/loss.txt", "w+") as outfile:
+    outfile.write("[")
+    for i in range(len(avg_loss_list) - 1):
+        outfile.write(str(avg_loss_list[i]) + ", ")
+    outfile.write(str(avg_loss_list[-1]))
+    outfile.write("]")
+"""
