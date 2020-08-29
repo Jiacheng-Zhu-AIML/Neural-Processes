@@ -55,7 +55,8 @@ class NP_Model(nn.Module):
                                                    use_self_attn=self.use_self_attention,
                                                    attention_layers=2,
                                                    use_lstm=False,
-                                                   cross_attention_type=self.cross_attention_type,
+                                                   cross_attention_type='uniform',
+                                                   cross_attention_rep='identity',
                                                    attention_dropout=0)
 
 

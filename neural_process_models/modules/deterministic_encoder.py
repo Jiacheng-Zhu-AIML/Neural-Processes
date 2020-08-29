@@ -23,6 +23,7 @@ class DeterministicEncoder(nn.Module):
         attention_layers=2,
         use_lstm=False,
         cross_attention_type="dot",
+        cross_attention_rep='mlp',
         attention_dropout=0,
     ):
         super().__init__()
@@ -59,7 +60,8 @@ class DeterministicEncoder(nn.Module):
             cross_attention_type,
             x_dim=input_x_dim,
             attention_layers=attention_layers,
-            mlp_hidden_dim_list=self.hidden_dim_list
+            mlp_hidden_dim_list=self.hidden_dim_list,
+            rep=cross_attention_rep,  # TODO: fix later
         )
 
 
