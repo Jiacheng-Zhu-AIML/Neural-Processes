@@ -19,7 +19,7 @@ class ANP_Model(nn.Module):
                  use_self_attention=True,
                  use_deter_path=True,
                  self_attention_type="dot",
-                 cross_attention_type="dot",
+                 cross_attention_type="multihead",
                  **kwargs):
         super(ANP_Model, self).__init__()
         self.x_dim = x_dim

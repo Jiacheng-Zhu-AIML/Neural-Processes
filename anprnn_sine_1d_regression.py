@@ -3,7 +3,7 @@
 import os
 import sys
 import torch
-# from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt
 
 # Provide access to modules in repo.
 sys.path.insert(0, os.path.abspath('neural_process_models'))
@@ -20,24 +20,24 @@ np_model = ANP_RNN_Model(x_dim=1,
                      latent_dim=256,
                      use_rnn=True,
                      use_self_attention=True,
-                     le_self_attention_type="laplace",
-                     de_self_attention_type="laplace",
-                     de_cross_attention_type="laplace",
+                     le_self_attention_type="dot",
+                     de_self_attention_type="dot",
+                     de_cross_attention_type="multihead",
                      use_deter_path=True)
 
 optim = torch.optim.Adam(np_model.parameters(), lr=1e-4)
 
-num_epochs = 1000
+num_epochs = 15000
 batch_size = 16
 
 loss_list = []
 
 for epoch in range(1, num_epochs + 1):
-    #print("step = " + str(epoch))
+    print("step = " + str(epoch))
 
     np_model.train()
 
-    # plt.clf()
+    plt.clf()
     optim.zero_grad()
 
     ctt_x, ctt_y, tgt_x, tgt_y = data.query(batch_size=batch_size,
@@ -51,7 +51,7 @@ for epoch in range(1, num_epochs + 1):
     mu, sigma, log_p, kl, loss = np_model(ctt_x, ctt_y, tgt_x, tgt_y)
 
     # print('kl =', kl)
-    # print('loss = ', loss)
+    print('loss = ', loss)
     # print('mu.size() =', mu.size())
     # print('sigma.size() =', sigma.size())
 
@@ -59,8 +59,7 @@ for epoch in range(1, num_epochs + 1):
     # print('tgt_x_np.shape =', tgt_x_np.shape)
 
     loss.backward()
-    if epoch % 5 == 0:
-        loss_list.append(loss.item())
+    loss_list.append(loss.item())
     optim.step()
 
     np_model.eval()
@@ -72,10 +71,11 @@ for epoch in range(1, num_epochs + 1):
                    ctt_y.numpy(),
                    mu.detach().numpy(),
                    sigma.detach().numpy())
-    # title_str = 'Training at epoch ' + str(epoch)
-    # plt.title(title_str)
-    # plt.savefig(title_str)
-    # plt.pause(0.1)
+    title_str = 'ANP-RNN Training at epoch ' + str(epoch)
+    plt.title(title_str)
+    if epoch % 250 == 0:
+        plt.savefig(title_str)
+    plt.pause(0.1)
 
 # plt.ioff()
 # plt.show() 

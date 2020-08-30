@@ -1,4 +1,4 @@
-"""Script that utilizes an ANP to regress points to a sine curve."""
+"""Script that utilizes an NP to regress points to a sine curve."""
 
 import os
 import sys
@@ -9,17 +9,17 @@ from matplotlib import pyplot as plt
 sys.path.insert(0, os.path.abspath('neural_process_models'))
 sys.path.insert(0, os.path.abspath('misc'))
 
-from neural_process_models.anp import ANP_Model
+from neural_process_models.np import NP_Model
 from misc.test_sin_regression.Sin_Wave_Data import sin_wave_data, plot_functions
 
 data = sin_wave_data()
 
-np_model = ANP_Model(x_dim=1,
+np_model = NP_Model(x_dim=1,
                      y_dim=1,
                      mlp_hidden_size_list=[256, 256, 256, 256],
                      latent_dim=256,
                      use_rnn=False,
-                     use_self_attention=True,
+                     use_self_attention=False,
                      use_deter_path=True)
 
 optim = torch.optim.Adam(np_model.parameters(), lr=1e-4)
@@ -66,10 +66,10 @@ for epoch in range(1, num_epochs + 1):
                    mu.detach().numpy(),
                    sigma.detach().numpy())
 
-    title_str = 'ANP Training at epoch ' + str(epoch)
+    title_str = 'NP Training at epoch ' + str(epoch)
     plt.title(title_str)
 
-    if epoch % 5 == 0:
+    if epoch % 50 == 0:
         plt.savefig(title_str)
     plt.pause(0.1)
 
